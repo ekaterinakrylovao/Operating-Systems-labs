@@ -1,0 +1,2 @@
+/home/vboxuser/Downloads/projects/lab1/test_dir1
+30

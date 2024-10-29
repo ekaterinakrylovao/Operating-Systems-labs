@@ -117,7 +117,7 @@ int main() {
 
     Daemon* daemon = Daemon::getInstance();
     
-	// Требует изменений под полный абсолютный путь к config.txt пользователя
+    // Требует изменений под полный абсолютный путь к config.txt пользователя
     daemon->readConfig("/path/to/daemon_project/config.txt");
     // Мой путь
     // daemon->readConfig("/home/vboxuser/Downloads/projects/lab1/config.txt");

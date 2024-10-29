@@ -15,7 +15,7 @@ private:
     std::string directory;
     int interval;
 
-    Daemon() : interval(60) {}
+    Daemon() : interval(60) {}  // Интервал по умолчанию — 60 секунд
 
 public:
     static Daemon* getInstance() {
@@ -67,12 +67,30 @@ void handleSignal(int signal) {
         daemon->reloadConfig();
     } else if (signal == SIGTERM) {
         syslog(LOG_INFO, "Демон завершает работу");
+        // Удаление PID-файла при завершении
+        unlink("/tmp/daemon.pid");
         closelog();
         exit(0);
     }
 }
 
 int main() {
+    // Проверка существующего PID-файла
+    std::ifstream pid_file_in("/tmp/daemon.pid");
+    if (pid_file_in.is_open()) {
+        pid_t existing_pid;
+        pid_file_in >> existing_pid;
+        pid_file_in.close();
+
+        // Проверка, что процесс с таким PID работает
+        if (kill(existing_pid, 0) == 0) {
+            std::cerr << "Демон уже запущен. Завершается." << std::endl;
+            return EXIT_FAILURE;
+        } else {
+            unlink("/tmp/daemon.pid");  // Если процесс не существует, удаляем PID-файл
+        }
+    }
+
     // Демонизация процесса
     pid_t pid = fork();
     if (pid < 0) exit(EXIT_FAILURE);
@@ -86,11 +104,11 @@ int main() {
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
 
-    // Запись pid в файл
-    std::ofstream pid_file("/tmp/daemon.pid");
-    if (pid_file.is_open()) {
-        pid_file << getpid();
-        pid_file.close();
+    // Запись PID в файл
+    std::ofstream pid_file_out("/tmp/daemon.pid");
+    if (pid_file_out.is_open()) {
+        pid_file_out << getpid();
+        pid_file_out.close();
     } else {
         exit(EXIT_FAILURE);
     }
@@ -98,8 +116,8 @@ int main() {
     openlog("daemon_example", LOG_PID, LOG_DAEMON);
 
     Daemon* daemon = Daemon::getInstance();
-
-    // Требует изменений под полный абсолютный путь к config.txt пользователя
+    
+	// Требует изменений под полный абсолютный путь к config.txt пользователя
     daemon->readConfig("/path/to/daemon_project/config.txt");
     // Мой путь
     // daemon->readConfig("/home/vboxuser/Downloads/projects/lab1/config.txt");
